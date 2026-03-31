@@ -144,10 +144,10 @@ Export singleton `settings = Settings()`.
 
 ### 11. `backend/ai/claude_client.py`
 - `generate_sql(query: str) -> str`:
-  - Calls Anthropic API with model `claude-sonnet-4-20250514`, max_tokens=500, temperature=0
+  - Calls OpenAI API with model `gpt-3.5-turbo`, max_tokens=500, temperature=0
   - System prompt from `prompt_builder.build_system_prompt()`
   - User message: the natural language query
-  - Extracts `.content[0].text`
+  - Extracts `response['choices'][0]['message']['content']`
   - Strips ```sql / ``` fences if present
   - Strips whitespace
   - Returns clean SQL string

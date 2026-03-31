@@ -1,6 +1,6 @@
 # 🏦 Vaani — AI Banking Intelligence
 
-> **वाणी** *(Sanskrit: voice/speech)* — Enterprise-grade natural language + voice interface for structured banking data, powered by Claude AI, Sarvam AI Voice, FastAPI, and Supabase.
+> **वाणी** *(Sanskrit: voice/speech)* — Enterprise-grade natural language + voice interface for structured banking data, powered by OpenAI GPT, Sarvam AI Voice, FastAPI, and Supabase.
 
 ---
 
@@ -43,7 +43,7 @@ No SQL knowledge required. No engineering dependency. Works in 11 Indian languag
 | UI Design | Custom dark luxury theme — Instrument Serif + Syne + JetBrains Mono |
 | Charts | Chart.js 4.x — teal/gold palette, auto-detected chart types |
 | Backend | Python 3.11+, FastAPI, Uvicorn |
-| AI — Text | Anthropic Claude API (`claude-sonnet-4-20250514`) |
+| AI — Text | OpenAI GPT API (`gpt-3.5-turbo`) |
 | Voice — STT | Sarvam AI `saarika:v2` (Speech-to-Text, 11 Indian languages) |
 | Voice — TTS | Sarvam AI `bulbul:v1` (Text-to-Speech, natural Indian voices) |
 | Database | Supabase — PostgreSQL 15, psycopg2 threaded connection pool |
@@ -69,7 +69,7 @@ POST /api/voice/transcribe
 Transcribed text string
         │
         ▼
-Claude AI SQL pipeline  (identical to typed query flow)
+OpenAI GPT SQL pipeline  (identical to typed query flow)
         │
         ▼
 Results rendered (sortable table + Chart.js)
@@ -157,7 +157,7 @@ vaani-banking-assistant/
 │   │   └── executor.py            # Read-only SQL executor (30s timeout)
 │   ├── ai/
 │   │   ├── __init__.py
-│   │   ├── claude_client.py       # Anthropic API wrapper
+│   │   ├── claude_client.py       # OpenAI API wrapper (formerly Claude)
 │   │   └── prompt_builder.py      # Schema-aware prompt + JOIN examples
 │   ├── voice/
 │   │   ├── __init__.py
@@ -206,7 +206,7 @@ cd vaani-banking-assistant
 
 # 2. Configure
 cp .env.example .env
-# Fill in: Supabase, Anthropic, and Sarvam credentials
+# Fill in: Supabase, OpenAI, and Sarvam credentials
 
 # 3. Initialize Supabase DB (SQL Editor — run in this order)
 #    supabase/schema.sql  →  seed.sql  →  rls_policies.sql

@@ -158,7 +158,7 @@ System prompt contents:
 `generate_sql(query: str) -> str`
 
 ```python
-model        = "claude-sonnet-4-20250514"
+model        = "gpt-3.5-turbo"
 max_tokens   = 500
 temperature  = 0          # deterministic SQL generation
 ```
