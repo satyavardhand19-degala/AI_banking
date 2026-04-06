@@ -32,6 +32,7 @@ No SQL knowledge required. No engineering dependency. Works in 11 Indian languag
 | ⚡ | **Supabase Backend** | Managed PostgreSQL + psycopg2 connection pooling |
 | 🛡️ | **SQL Injection Prevention** | Allowlist validation — no raw user input in SQL |
 | 🏗️ | **Modular Architecture** | Clean layered backend: AI / Voice / DB / Validator |
+| 🛡️ | **Demo Fallback Mode** | Rule-based SQL generator kicks in if OpenAI API runs out of quota |
 
 ---
 
@@ -185,12 +186,10 @@ vaani-banking-assistant/
 │   ├── schema.sql
 │   ├── seed.sql
 │   └── rls_policies.sql
-├── docs/
-│   ├── README.md
-│   ├── scope.md
-│   ├── specification.md
-│   ├── deploy.md
-│   └── prompt.md
+├── scope.md
+├── specification.md
+├── deploy.md
+├── prompt.md
 ├── .env.example
 └── .gitignore
 ```

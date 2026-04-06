@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Vaani — AI Banking Intelligence. Query your banking data using natural language or voice in 11 Indian languages.">
+    <meta name="theme-color" content="#050810">
     <title>Vaani — AI Banking Intelligence</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,8 +28,9 @@
                     <span class="brand-tag">AI BANKING INTELLIGENCE</span>
                 </div>
             </div>
+            <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">☰</button>
             <div class="header-right">
-                <select id="language-select">
+                <select id="language-select" aria-label="Voice language">
                     <option value="en-IN">English (IN)</option>
                     <option value="hi-IN">Hindi (हिन्दी)</option>
                     <option value="ta-IN">Tamil (தமிழ்)</option>
@@ -40,29 +43,32 @@
                     <option value="or-IN">Odia (ଓଡ଼ିଆ)</option>
                     <option value="pa-IN">Punjabi (ਪੰਜਾਬੀ)</option>
                 </select>
-                <div class="status-pill">
+                <div class="status-pill" id="status-pill">
                     <div class="status-dot" id="status-dot"></div>
                     <span id="status-text">Connecting...</span>
                 </div>
             </div>
         </header>
 
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">Query History</div>
             <ul id="history-list">
-                <!-- History items will be injected here -->
+                <!-- History items injected by JS -->
             </ul>
+            <div class="sidebar-empty" id="sidebar-empty">
+                <p>Your recent queries will appear here</p>
+            </div>
         </aside>
 
         <main class="main-panel">
             <div class="query-section">
                 <h1 class="query-title">Ask your banking data<span class="cursor">_</span></h1>
                 <p class="query-hint">Type a question or click the mic to speak — in English or any Indian language</p>
-                
+
                 <div class="query-container">
                     <div class="input-row">
-                        <textarea id="query-input" placeholder="e.g. Show last 10 transactions above ₹10,000..."></textarea>
-                        <button id="mic-btn" title="Voice query">
+                        <textarea id="query-input" placeholder="e.g. Show last 10 transactions above ₹10,000..." aria-label="Enter your query"></textarea>
+                        <button id="mic-btn" title="Voice query" aria-label="Record voice query">
                             <div class="mic-icon">🎙</div>
                             <div class="waveform">
                                 <div class="bar"></div>
@@ -82,16 +88,16 @@
 
             <div class="results-section" id="results-section" style="display:none">
                 <div class="results-header">
-                    <div class="sql-toggle-btn" id="sql-toggle">
+                    <div class="sql-toggle-btn" id="sql-toggle" role="button" tabindex="0" aria-expanded="false">
                         <span class="sql-badge">SQL</span>
                         <span id="sql-toggle-icon">▼</span>
                     </div>
                     <div class="results-meta">
                         <div class="row-count" id="row-count">0 rows found</div>
-                        <button id="tts-btn" class="icon-btn" title="Hear summary">🔊</button>
+                        <button id="tts-btn" class="icon-btn" title="Hear summary" aria-label="Listen to result summary" style="display:none">🔊</button>
                     </div>
                 </div>
-                
+
                 <div id="sql-display-container" class="sql-container" style="display:none">
                     <pre id="sql-display"></pre>
                 </div>
@@ -100,8 +106,9 @@
                     <div class="chart-container" id="chart-container" style="display:none">
                         <canvas id="chart-canvas"></canvas>
                     </div>
+                    <div class="bignumber-container" id="bignumber-container" style="display:none"></div>
                     <div id="table-container" class="table-container">
-                        <!-- Table will be injected here -->
+                        <!-- Table injected by JS -->
                     </div>
                 </div>
             </div>
@@ -117,7 +124,7 @@
 
     <div id="toast" class="toast"></div>
 
-    <!-- Scripts -->
+    <!-- Scripts (order matters) -->
     <script src="js/api.js"></script>
     <script src="js/charts.js"></script>
     <script src="js/voice.js"></script>
