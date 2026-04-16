@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan — startup and shutdown events."""
     # Startup
     logger.info(f"Vaani AI Banking Assistant started — ENV: {settings.app_env}")
-    logger.info(f"Database mode: {'SQLite (local)' if settings.use_local_db else 'PostgreSQL (Supabase)'}")
+    logger.info("Database mode: Supabase PostgreSQL (Managed)")
 
     # Warm the DB pool on startup
     from database.connection import db_pool
@@ -39,8 +39,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Vaani — AI Banking Intelligence",
-    description="Natural language and voice interface for banking data.",
+    title="Vaani — Smart Data Intelligence",
+    description="Natural language interface for banking data analysis.",
     lifespan=lifespan
 )
 

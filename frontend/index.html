@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Vaani — AI Banking Intelligence. Query your banking data using natural language or voice in 11 Indian languages.">
+    <meta name="description" content="Vaani — Smart Data Intelligence. Query your banking data using natural language or voice.">
     <meta name="theme-color" content="#050810">
-    <title>Vaani — AI Banking Intelligence</title>
+    <title>Vaani — Smart Data Intelligence</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +25,7 @@
                 <div class="logo-mark">⬡</div>
                 <div>
                     <span class="brand-name">Vaani</span>
-                    <span class="brand-tag">AI BANKING INTELLIGENCE</span>
+                    <span class="brand-tag">DATA INTELLIGENCE</span>
                 </div>
             </div>
             <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">☰</button>
@@ -37,11 +37,11 @@
                     <option value="te-IN">Telugu (తెలుగు)</option>
                     <option value="kn-IN">Kannada (ಕನ್ನಡ)</option>
                     <option value="bn-IN">Bengali (বাংলা)</option>
-                    <option value="mr-IN">Marathi (मराठी)</option>
+                    <option value="mr-IN">Marathi (મરાઠી)</option>
                     <option value="gu-IN">Gujarati (ગુજરાતી)</option>
-                    <option value="ml-IN">Malayalam (മലയാളം)</option>
-                    <option value="or-IN">Odia (ଓଡ଼ିଆ)</option>
-                    <option value="pa-IN">Punjabi (ਪੰਜਾਬੀ)</option>
+                    <option value="ml-IN">Malayalam (മലയാളમ)</option>
+                    <option value="or-IN">Odia (ଓડ଼િଆ)</option>
+                    <option value="pa-IN">Punjabi (પੰਜਾਬી)</option>
                 </select>
                 <div class="status-pill" id="status-pill">
                     <div class="status-dot" id="status-dot"></div>
@@ -62,12 +62,12 @@
 
         <main class="main-panel">
             <div class="query-section">
-                <h1 class="query-title">Ask your banking data<span class="cursor">_</span></h1>
-                <p class="query-hint">Type a question or click the mic to speak — in English or any Indian language</p>
+                <h1 class="query-title">Ask your data vault<span class="cursor">_</span></h1>
+                <p class="query-hint">Upload a file then type a question or speak in your language</p>
 
                 <div class="query-container">
                     <div class="input-row">
-                        <textarea id="query-input" placeholder="e.g. Show last 10 transactions above ₹10,000..." aria-label="Enter your query"></textarea>
+                        <textarea id="query-input" placeholder="e.g. Show all records where value is greater than 5000..." aria-label="Enter your query"></textarea>
                         <button id="mic-btn" title="Voice query" aria-label="Record voice query">
                             <div class="mic-icon">🎙</div>
                             <div class="waveform">
@@ -84,6 +84,14 @@
                         <span class="kbd-hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
                     </div>
                 </div>
+                <div class="dropzone" id="file-dropzone">
+                    <input type="file" id="file-upload" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" hidden>
+                    <div class="dropzone-content">
+                        <div class="dropzone-icon">📄</div>
+                        <p class="dropzone-text">Drag & drop your CSV/Excel data here, or</p>
+                        <button class="dropzone-btn" id="upload-trigger-btn">Browse Files</button>
+                    </div>
+                </div>
             </div>
 
             <div class="results-section" id="results-section" style="display:none">
@@ -94,8 +102,12 @@
                     </div>
                     <div class="results-meta">
                         <div class="row-count" id="row-count">0 rows found</div>
-                        <button id="tts-btn" class="icon-btn" title="Hear summary" aria-label="Listen to result summary" style="display:none">🔊</button>
+                        <button id="tts-btn" class="icon-btn" title="Hear summary" aria-label="Listen to result summary">🔊</button>
                     </div>
+                </div>
+
+                <div id="summary-display" class="summary-text" style="margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 4px solid #00f2fe; color: #fff; display:none;">
+                    <!-- Manual summary injected here -->
                 </div>
 
                 <div id="sql-display-container" class="sql-container" style="display:none">

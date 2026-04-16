@@ -1,4 +1,4 @@
-# Vaani AI Banking Intelligence — SQL Executor
+# Vaani AI Banking Intelligence — SQL Executor (PostgreSQL Only)
 
 from .connection import db_pool
 from config import settings
@@ -11,16 +11,14 @@ class QueryExecutionError(Exception):
 
 def execute_query(sql: str) -> dict:
     """
-    Executes a read-only SQL query and returns the results.
+    Executes a read-only SQL query against the PostgreSQL pool and returns results.
     """
     try:
         with db_pool.get_connection() as conn:
-            # For SQLite, conn.cursor() doesn't support context manager in all versions
             cursor = conn.cursor()
             try:
-                # Set statement timeout for PostgreSQL only
-                if not settings.use_local_db:
-                    cursor.execute("SET statement_timeout = '30000'")
+                # Set statement timeout for PostgreSQL
+                cursor.execute("SET statement_timeout = '30000'")
                 
                 # Execute the actual query
                 cursor.execute(sql)
@@ -33,8 +31,7 @@ def execute_query(sql: str) -> dict:
                     # Convert results to JSON-serializable formats
                     formatted_rows = []
                     for row in rows:
-                        # Row might be a tuple (psycopg2) or sqlite3.Row
-                        # Convert to list
+                        # Row is a tuple (psycopg2)
                         row_list = list(row)
                         # Format special types (like Decimals or datetime) to strings
                         formatted_rows.append([str(item) if hasattr(item, '__str__') and not isinstance(item, (int, float, str, bool, type(None))) else item for item in row_list])
@@ -53,5 +50,5 @@ def execute_query(sql: str) -> dict:
             finally:
                 cursor.close()
     except Exception as e:
-        logger.error(f"SQL Execution Error: {e}")
+        logger.error(f"PostgreSQL Execution Error: {e}")
         raise QueryExecutionError(str(e))

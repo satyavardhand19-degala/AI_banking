@@ -1,15 +1,9 @@
-# Vaani AI Banking Intelligence — Configuration
+# Vaani Smart Data Intelligence — Configuration
 
-import os
 from pydantic_settings import BaseSettings
-from typing import Optional
 
 class Settings(BaseSettings):
-    # Database Toggle
-    use_local_db: bool = True
-    sqlite_db_path: str = "local_vault.db"
-
-    # Supabase / PostgreSQL
+    # Database / PostgreSQL
     supabase_url: str = ""
     supabase_service_key: str = ""
     supabase_db_host: str = "localhost"
@@ -18,13 +12,7 @@ class Settings(BaseSettings):
     supabase_db_user: str = "postgres"
     supabase_db_password: str = ""
 
-    # Anthropic AI
-    anthropic_api_key: Optional[str] = None
-
-    # OpenAI AI
-    openai_api_key: str = "dummy"
-
-    # Sarvam AI
+    # Sarvam AI (Voice Only)
     sarvam_api_key: str = "dummy"
     sarvam_stt_model: str = "saarika:v2"
     sarvam_tts_model: str = "bulbul:v1"
@@ -37,6 +25,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 # Export singleton
 settings = Settings()

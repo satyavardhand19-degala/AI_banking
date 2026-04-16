@@ -1,0 +1,36 @@
+# ── Vaani — Render Blueprint Specification ──
+
+services:
+  - type: web
+    name: vaani-data-intelligence
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && gunicorn main:app --bind 0.0.0.0:$PORT --worker-class uvicorn.workers.UvicornWorker
+    plan: starter # Starter plan recommended for performance
+    region: singapore # Recommended for Sarvam AI latency
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - fromGroup: vaani-credentials
+
+envVarGroups:
+  - name: vaani-credentials
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_DB_HOST
+        sync: false
+      - key: SUPABASE_DB_PORT
+        value: "5432"
+      - key: SUPABASE_DB_NAME
+        value: "postgres"
+      - key: SUPABASE_DB_USER
+        value: "postgres"
+      - key: SUPABASE_DB_PASSWORD
+        sync: false
+      - key: SARVAM_API_KEY
+        sync: false

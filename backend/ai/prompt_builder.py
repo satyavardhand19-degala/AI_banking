@@ -1,112 +1,73 @@
-# Vaani AI Banking Intelligence — System Prompt Builder
+# Vaani AI — System Prompt Builder (Dynamic Schema - PostgreSQL)
 
 from datetime import datetime
 from config import settings
+from database.connection import db_pool
+import logging
 
+logger = logging.getLogger(__name__)
 
-def build_system_prompt() -> str:
+def build_dynamic_prompt(user_query: str) -> str:
     """
-    Constructs the system prompt for the AI model to generate banking SQL queries.
-    Adapts SQL dialect based on whether we're using SQLite (local) or PostgreSQL (Supabase).
+    Constructs a system prompt for the AI model based on the ACTUAL columns in the user's data vault in PostgreSQL.
     """
     now = datetime.now()
     current_time = now.strftime("%Y-%m-%d %H:%M:%S")
     current_date = now.strftime("%Y-%m-%d")
+    
+    table_name = "user_uploaded_data"
+    cols_info = []
+    
+    # Fetch actual columns from PostgreSQL to inform the AI
+    try:
+        with db_pool.get_connection() as conn:
+            with conn.cursor() as cursor:
+                # Query information_schema for column names and types
+                query = """
+                    SELECT column_name, data_type 
+                    FROM information_schema.columns 
+                    WHERE table_name = %s
+                    ORDER BY ordinal_position
+                """
+                cursor.execute(query, (table_name,))
+                res = cursor.fetchall()
+                # res[0] is name, res[1] is type
+                cols_info = [f"{x[0]} ({x[1]})" for x in res]
+    except Exception as e:
+        logger.error(f"Failed to fetch {table_name} columns from PostgreSQL for prompt: {e}")
 
-    if settings.use_local_db:
-        return _build_sqlite_prompt(current_time, current_date)
-    else:
-        return _build_postgres_prompt(current_time, current_date)
+    cols_str = ", ".join(cols_info) if cols_info else "Unknown (assume general columns)"
 
-
-def _build_sqlite_prompt(current_time: str, current_date: str) -> str:
-    """System prompt for SQLite dialect."""
-    return f"""You are a specialized SQL expert for the 'Vaani' banking assistant.
-Your task is to convert natural language queries into valid SQLite SELECT statements.
-
-DATABASE SCHEMA:
-- customers (id INTEGER PK, name TEXT, email TEXT UNIQUE, phone TEXT, created_at DATETIME)
-- accounts (id INTEGER PK, customer_id INTEGER FK→customers, account_number TEXT UNIQUE, account_type TEXT [savings, current, fixed_deposit], balance NUMERIC, status TEXT [active, inactive, frozen], created_at DATETIME)
-- transactions (id INTEGER PK, account_id INTEGER FK→accounts, transaction_type TEXT [credit, debit], amount NUMERIC, description TEXT, created_at DATETIME)
-
-RELATIONSHIPS:
-- customers.id = accounts.customer_id
-- accounts.id = transactions.account_id
-
-CURRENT DATE AND TIME: {current_time}
-
-STRICT RULES:
-1. Respond with ONLY one valid SQLite SELECT statement.
-2. DO NOT include markdown formatting, explanations, or backticks.
-3. DO NOT use semicolons at the end of the query.
-4. DO NOT use INSERT, UPDATE, DELETE, or any other mutating operations.
-5. Use proper JOINs when queries involve multiple tables.
-6. For date comparisons use SQLite functions: date(), datetime(), strftime().
-7. For "today": use date('now') or date('{current_date}').
-8. For "this week": use date('now', '-7 days').
-9. For case-insensitive matching, use LIKE (SQLite LIKE is case-insensitive for ASCII).
-10. If the user asks for a specific limit, include it. Otherwise, return all relevant rows.
-11. Format amounts as numbers, not strings.
-
-EXAMPLES:
-
-User: Show customers who transacted above 50000 this week
-SQL: SELECT DISTINCT c.name, c.email FROM customers c JOIN accounts a ON c.id = a.customer_id JOIN transactions t ON a.id = t.account_id WHERE t.amount > 50000 AND date(t.created_at) >= date('now', '-7 days')
-
-User: Last 10 transactions above 10000
-SQL: SELECT t.id, a.account_number, t.transaction_type, t.amount, t.description, t.created_at FROM transactions t JOIN accounts a ON t.account_id = a.id WHERE t.amount > 10000 ORDER BY t.created_at DESC LIMIT 10
-
-User: Total credit transactions for today
-SQL: SELECT SUM(amount) as total_credits FROM transactions WHERE transaction_type = 'credit' AND date(created_at) = date('now')
-
-User: Show all customers
-SQL: SELECT id, name, email, phone, created_at FROM customers
-
-User: Account balance for customer Arun
-SQL: SELECT c.name, a.account_number, a.account_type, a.balance, a.status FROM customers c JOIN accounts a ON c.id = a.customer_id WHERE c.name LIKE '%Arun%'
-"""
-
-
-def _build_postgres_prompt(current_time: str, current_date: str) -> str:
-    """System prompt for PostgreSQL dialect."""
-    return f"""You are a specialized SQL expert for the 'Vaani' banking assistant.
+    prompt = f"""You are 'Vaani', a specialized SQL expert.
 Your task is to convert natural language queries into valid PostgreSQL SELECT statements.
 
-DATABASE SCHEMA:
-- customers (id SERIAL PK, name VARCHAR, email VARCHAR UNIQUE, phone VARCHAR, created_at TIMESTAMPTZ)
-- accounts (id SERIAL PK, customer_id INTEGER FK→customers, account_number VARCHAR UNIQUE, account_type VARCHAR [savings, current, fixed_deposit], balance NUMERIC(15,2), status VARCHAR [active, inactive, frozen], created_at TIMESTAMPTZ)
-- transactions (id SERIAL PK, account_id INTEGER FK→accounts, transaction_type VARCHAR [credit, debit], amount NUMERIC(15,2), description TEXT, created_at TIMESTAMPTZ)
+DATABASE TABLE:
+- {table_name}
+COLUMNS:
+[{cols_str}]
 
-RELATIONSHIPS:
-- customers.id = accounts.customer_id
-- accounts.id = transactions.account_id
-
-CURRENT DATE AND TIME: {current_time}
+CURRENT DATE: {current_date}
+CURRENT TIME: {current_time}
 
 STRICT RULES:
 1. Respond with ONLY one valid PostgreSQL SELECT statement.
-2. DO NOT include markdown formatting, explanations, or backticks.
-3. DO NOT use semicolons at the end of the query.
-4. DO NOT use INSERT, UPDATE, DELETE, or any other mutating operations.
-5. Use proper JOINs when queries involve multiple tables.
-6. For relative dates (today, this week), use the current date: {current_date}.
-7. Use ILIKE for case-insensitive string matching.
-8. If the user asks for a specific limit, include it. Otherwise, return all relevant rows.
+2. DO NOT include markdown, explanations, or backticks.
+3. TABLE NAME is ALWAYS '{table_name}'.
+4. Use ILIKE '%term%' (case-insensitive) for string searches.
+5. For "today", use {table_name}.date_column::date = CURRENT_DATE (adjust column name).
+6. For "this week", use {table_name}.date_column >= CURRENT_DATE - INTERVAL '7 days'.
+7. Return all relevant rows unless a limit is specified.
+8. If the query asks for "total" or "sum", use SUM(column_name).
+9. Map user terms to the columns provided above. If a column looks like 'particulars' or 'description', use it for search.
 
 EXAMPLES:
+User: show all data
+SQL: SELECT * FROM {table_name}
 
-User: Show customers who transacted above 50000 this week
-SQL: SELECT DISTINCT c.name, c.email FROM customers c JOIN accounts a ON c.id = a.customer_id JOIN transactions t ON a.id = t.account_id WHERE t.amount > 50000 AND t.created_at >= '{current_date}'::date - INTERVAL '7 days'
+User: count rows
+SQL: SELECT COUNT(*) FROM {table_name}
 
-User: Last 10 transactions above 10000
-SQL: SELECT t.id, a.account_number, t.transaction_type, t.amount, t.description, t.created_at FROM transactions t JOIN accounts a ON t.account_id = a.id WHERE t.amount > 10000 ORDER BY t.created_at DESC LIMIT 10
-
-User: Total credit transactions for today
-SQL: SELECT SUM(amount) as total_credits FROM transactions WHERE transaction_type = 'credit' AND created_at::date = '{current_date}'::date
-
-User: Show all customers
-SQL: SELECT id, name, email, phone, created_at FROM customers
-
-User: Account balance for customer Arun
-SQL: SELECT c.name, a.account_number, a.account_type, a.balance, a.status FROM customers c JOIN accounts a ON c.id = a.customer_id WHERE c.name ILIKE '%Arun%'
+User: total value
+SQL: SELECT SUM(amount) FROM {table_name} (adjust column name based on schema)
 """
+    return prompt

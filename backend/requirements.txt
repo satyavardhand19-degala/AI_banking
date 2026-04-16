@@ -1,9 +1,12 @@
 fastapi
 uvicorn[standard]
+gunicorn
 psycopg2-binary
-openai
+sqlalchemy
 python-dotenv
 pydantic
 pydantic-settings
 python-multipart
 httpx
+pandas
+openpyxl

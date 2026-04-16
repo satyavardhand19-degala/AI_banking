@@ -364,6 +364,67 @@ header {
     box-shadow: 0 20px 40px rgba(0,0,0,0.3);
 }
 
+.dropzone {
+    background: rgba(255, 255, 255, 0.02);
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 32px;
+    text-align: center;
+    margin-top: 24px;
+    transition: var(--transition);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.dropzone:hover, .dropzone.dragover {
+    background: rgba(212, 168, 83, 0.05);
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 20px var(--accent-gold-glow);
+}
+
+.dropzone-content {
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.dropzone-icon {
+    font-size: 32px;
+    color: var(--text-muted);
+    transition: var(--transition);
+}
+
+.dropzone:hover .dropzone-icon, .dropzone.dragover .dropzone-icon {
+    color: var(--accent-gold);
+    transform: translateY(-4px);
+}
+
+.dropzone-text {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.dropzone-btn {
+    background: transparent;
+    color: var(--accent-gold);
+    border: 1px solid var(--accent-gold);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 8px;
+    pointer-events: auto;
+    transition: var(--transition);
+}
+
+.dropzone-btn:hover {
+    background: var(--accent-gold);
+    color: var(--bg-void);
+}
+
 .input-row {
     display: flex;
     gap: 16px;
@@ -709,7 +770,7 @@ kbd {
     background: var(--bg-panel);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 20px;
-    overflow: hidden;
+    overflow-x: auto;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     animation: fade-up 0.4s ease forwards;
 }

@@ -32,7 +32,7 @@ def validate_sql(sql: str) -> Tuple[bool, Optional[str]]:
         return False, "mid_query_semicolon"
         
     # 5. Table allowlist
-    allowlist = ["customers", "accounts", "transactions"]
+    allowlist = ["user_uploaded_data"]
     # Extract words after FROM or JOIN
     tables_found = re.findall(r'\b(?:FROM|JOIN)\s+([a-zA-Z0-9_]+)', sql_upper)
     for table in tables_found:

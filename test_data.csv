@@ -1,0 +1,5 @@
+transaction_type,amount,description
+credit,150.00,Client retainter
+debit,25.50,Coffee shop
+credit,400.00,Refund
+debit,12.00,Subscription
