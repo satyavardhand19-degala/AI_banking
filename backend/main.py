@@ -3,12 +3,10 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from api.routes import router as api_router
 from config import settings
 import logging
-import os
 
 # Configure logging
 logging.basicConfig(
@@ -56,16 +54,6 @@ app.add_middleware(
 
 # Include API Router
 app.include_router(api_router, prefix="/api")
-
-# Static Files (Frontend)
-frontend_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
-app.mount("/css", StaticFiles(directory=os.path.join(frontend_dir, "css")), name="css")
-app.mount("/js", StaticFiles(directory=os.path.join(frontend_dir, "js")), name="js")
-
-
-@app.get("/")
-async def root():
-    return FileResponse(os.path.join(frontend_dir, "index.html"))
 
 
 @app.get("/api-status")
