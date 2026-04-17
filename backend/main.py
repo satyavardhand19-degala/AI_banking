@@ -73,6 +73,11 @@ async def api_status():
     return {"message": "Vaani AI Banking API is running. Visit /docs for documentation."}
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return JSONResponse(status_code=204, content={})
+
+
 # ── Global Exception Handler — never expose stack traces ──
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

@@ -6,11 +6,14 @@ from sqlalchemy import create_engine
 from contextlib import contextmanager
 from config import settings
 import logging
+import urllib.parse
 
 logger = logging.getLogger(__name__)
 
 # SQLAlchemy Engine for Pandas to_sql operations
-URI = f"postgresql://{settings.supabase_db_user}:{settings.supabase_db_password}@{settings.supabase_db_host}:{settings.supabase_db_port}/{settings.supabase_db_name}"
+# We escape the password to handle special characters (e.g. @, :)
+encoded_password = urllib.parse.quote_plus(settings.supabase_db_password)
+URI = f"postgresql://{settings.supabase_db_user}:{encoded_password}@{settings.supabase_db_host}:{settings.supabase_db_port}/{settings.supabase_db_name}?sslmode=require"
 engine = create_engine(URI)
 
 class DatabasePool:
@@ -18,15 +21,17 @@ class DatabasePool:
         self._pool = None
         try:
             self._pool = psycopg2.pool.ThreadedConnectionPool(
-                minconn=2,
+                minconn=1,
                 maxconn=10,
                 host=settings.supabase_db_host,
                 port=settings.supabase_db_port,
                 dbname=settings.supabase_db_name,
                 user=settings.supabase_db_user,
-                password=settings.supabase_db_password
+                password=settings.supabase_db_password,
+                sslmode='require',
+                connect_timeout=10
             )
-            logger.info("Supabase PostgreSQL connection pool initialized")
+            logger.info(f"Supabase PostgreSQL pool initialized on port {settings.supabase_db_port} (SSL required)")
         except Exception as e:
             logger.error(f"Error initializing Supabase pool: {e}")
 

@@ -11,7 +11,8 @@ def init_db():
             port=settings.supabase_db_port,
             dbname=settings.supabase_db_name,
             user=settings.supabase_db_user,
-            password=settings.supabase_db_password
+            password=settings.supabase_db_password,
+            sslmode='require'
         )
         conn.autocommit = True
         cursor = conn.cursor()
