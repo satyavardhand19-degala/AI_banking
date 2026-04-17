@@ -1,5 +1,11 @@
 # Vaani AI Banking Intelligence — Main Entry Point
 
+import sys
+import os
+# Ensure backend/ is in the path so sub-packages (api, database, ai, voice, validators)
+# are importable when Vercel's runtime sets cwd to the project root, not backend/.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
