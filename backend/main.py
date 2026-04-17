@@ -18,22 +18,9 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan — startup and shutdown events."""
-    # Startup
-    logger.info(f"Vaani AI Banking Assistant started — ENV: {settings.app_env}")
-    logger.info("Database mode: Supabase PostgreSQL (Managed)")
-
-    # Warm the DB pool on startup
-    from database.connection import db_pool
-    if db_pool.test_connection():
-        logger.info("Database connection verified ✓")
-    else:
-        logger.warning("Database connection failed on startup — check credentials")
-
+    logger.info(f"Vaani started — ENV: {settings.app_env}")
     yield
-
-    # Shutdown
-    logger.info("Vaani AI Banking Assistant shutting down")
+    logger.info("Vaani shutting down")
 
 
 app = FastAPI(
