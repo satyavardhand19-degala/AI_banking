@@ -3,6 +3,7 @@
 import psycopg2
 from psycopg2 import pool
 from sqlalchemy import create_engine
+from sqlalchemy.pool import NullPool
 from contextlib import contextmanager
 from config import settings
 import logging
@@ -11,10 +12,11 @@ import urllib.parse
 logger = logging.getLogger(__name__)
 
 # SQLAlchemy Engine for Pandas to_sql operations
-# We escape the password to handle special characters (e.g. @, :)
+# NullPool disables connection pooling — required for serverless (Vercel) where
+# each invocation is a fresh process and pooled connections go stale instantly.
 encoded_password = urllib.parse.quote_plus(settings.supabase_db_password)
 URI = f"postgresql://{settings.supabase_db_user}:{encoded_password}@{settings.supabase_db_host}:{settings.supabase_db_port}/{settings.supabase_db_name}?sslmode=require"
-engine = create_engine(URI)
+engine = create_engine(URI, poolclass=NullPool)
 
 class DatabasePool:
     def __init__(self):
