@@ -20,20 +20,22 @@ class DatabasePool:
     def __init__(self):
         self._pool = None
         try:
+            # We use a smaller pool and higher timeout for the pooler
             self._pool = psycopg2.pool.ThreadedConnectionPool(
                 minconn=1,
-                maxconn=10,
+                maxconn=5,
                 host=settings.supabase_db_host,
                 port=settings.supabase_db_port,
                 dbname=settings.supabase_db_name,
                 user=settings.supabase_db_user,
                 password=settings.supabase_db_password,
                 sslmode='require',
-                connect_timeout=10
+                connect_timeout=15,
+                options="-c search_path=public"
             )
-            logger.info(f"Supabase PostgreSQL pool initialized on port {settings.supabase_db_port} (SSL required)")
+            logger.info(f"Connected to Supabase Pooler on {settings.supabase_db_host}:{settings.supabase_db_port}")
         except Exception as e:
-            logger.error(f"Error initializing Supabase pool: {e}")
+            logger.error(f"Failed to connect to Supabase Pooler: {e}")
 
     @contextmanager
     def get_connection(self):
