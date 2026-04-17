@@ -20,22 +20,21 @@ class DatabasePool:
     def __init__(self):
         self._pool = None
         try:
-            # We use a smaller pool and higher timeout for the pooler
+            # Simple connection for the pooler
             self._pool = psycopg2.pool.ThreadedConnectionPool(
                 minconn=1,
-                maxconn=5,
+                maxconn=10,
                 host=settings.supabase_db_host,
                 port=settings.supabase_db_port,
                 dbname=settings.supabase_db_name,
                 user=settings.supabase_db_user,
                 password=settings.supabase_db_password,
                 sslmode='require',
-                connect_timeout=15,
-                options="-c search_path=public"
+                connect_timeout=15
             )
-            logger.info(f"Connected to Supabase Pooler on {settings.supabase_db_host}:{settings.supabase_db_port}")
+            logger.info("Successfully connected to Supabase Connection Pooler")
         except Exception as e:
-            logger.error(f"Failed to connect to Supabase Pooler: {e}")
+            logger.error(f"Database Pool Error: {e}")
 
     @contextmanager
     def get_connection(self):
