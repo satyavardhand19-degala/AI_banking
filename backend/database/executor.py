@@ -1,7 +1,4 @@
-# Vaani AI Banking Intelligence — SQL Executor (PostgreSQL Only)
-
-from .connection import db_pool
-from config import settings
+from .connection import get_supabase
 import logging
 
 logger = logging.getLogger(__name__)
@@ -10,45 +7,21 @@ class QueryExecutionError(Exception):
     pass
 
 def execute_query(sql: str) -> dict:
-    """
-    Executes a read-only SQL query against the PostgreSQL pool and returns results.
-    """
     try:
-        with db_pool.get_connection() as conn:
-            cursor = conn.cursor()
-            try:
-                # Set statement timeout for PostgreSQL
-                cursor.execute("SET statement_timeout = '30000'")
-                
-                # Execute the actual query
-                cursor.execute(sql)
-                
-                # Fetch results if it's a SELECT query
-                if cursor.description:
-                    columns = [desc[0] for desc in cursor.description]
-                    rows = cursor.fetchall()
-                    
-                    # Convert results to JSON-serializable formats
-                    formatted_rows = []
-                    for row in rows:
-                        # Row is a tuple (psycopg2)
-                        row_list = list(row)
-                        # Format special types (like Decimals or datetime) to strings
-                        formatted_rows.append([str(item) if hasattr(item, '__str__') and not isinstance(item, (int, float, str, bool, type(None))) else item for item in row_list])
-                    
-                    return {
-                        "columns": columns,
-                        "rows": formatted_rows,
-                        "count": len(rows)
-                    }
-                else:
-                    return {
-                        "columns": [],
-                        "rows": [],
-                        "count": cursor.rowcount
-                    }
-            finally:
-                cursor.close()
+        supabase = get_supabase()
+        response = supabase.rpc('execute_sql', {'query_text': sql}).execute()
+        rows_data = response.data or []
+
+        if not rows_data:
+            return {"columns": [], "rows": [], "count": 0}
+
+        columns = list(rows_data[0].keys())
+        rows = [
+            [str(row[col]) if row[col] is not None and not isinstance(row[col], (int, float, bool)) else row[col]
+             for col in columns]
+            for row in rows_data
+        ]
+        return {"columns": columns, "rows": rows, "count": len(rows)}
     except Exception as e:
-        logger.error(f"PostgreSQL Execution Error: {e}")
+        logger.error(f"Query execution error: {e}")
         raise QueryExecutionError(str(e))

@@ -20,35 +20,64 @@ logger = logging.getLogger(__name__)
 def sanitize_columns(columns):
     return [re.sub(r'\W+', '_', str(col).lower().strip()) for col in columns]
 
+def _escape_value(v) -> str:
+    if v is None:
+        return 'NULL'
+    try:
+        import math
+        if isinstance(v, float) and math.isnan(v):
+            return 'NULL'
+    except Exception:
+        pass
+    return "'" + str(v).replace("'", "''") + "'"
+
+
 @router.post("/upload-data")
 async def upload_data(file: UploadFile = File(...)):
     try:
         content = await file.read()
         file_io = io.BytesIO(content)
-        
+
         if file.filename.endswith('.csv'):
             df = pd.read_csv(file_io)
         elif file.filename.endswith(('.xls', '.xlsx')):
             df = pd.read_excel(file_io)
         else:
             return {"success": False, "error": "Unsupported file format. Please upload CSV or Excel."}
-            
+
         if df.empty:
             return {"success": False, "error": "The uploaded file is empty."}
-            
-        # Drop rows where all elements are missing
+
         df = df.dropna(how='all')
-        
         if df.empty:
             return {"success": False, "error": "The uploaded file contains only empty rows."}
 
         df.columns = sanitize_columns(df.columns)
-        
-        from database.connection import engine
-        df.to_sql('user_uploaded_data', con=engine, if_exists='replace', index=False)
-            
+
+        from database.connection import get_supabase
+        supabase = get_supabase()
+
+        # Recreate the table with TEXT columns matching the CSV headers
+        col_defs = ', '.join([f'"{col}" TEXT' for col in df.columns])
+        supabase.rpc('execute_ddl', {'query_text': 'DROP TABLE IF EXISTS user_uploaded_data'}).execute()
+        supabase.rpc('execute_ddl', {'query_text': f'CREATE TABLE user_uploaded_data ({col_defs})'}).execute()
+
+        # Insert rows in batches of 500
+        cols_sql = ', '.join([f'"{col}"' for col in df.columns])
+        rows = df.values.tolist()
+        batch_size = 500
+        for i in range(0, len(rows), batch_size):
+            batch = rows[i:i + batch_size]
+            values_sql = ', '.join(
+                '(' + ', '.join(_escape_value(v) for v in row) + ')'
+                for row in batch
+            )
+            supabase.rpc('execute_ddl', {
+                'query_text': f'INSERT INTO user_uploaded_data ({cols_sql}) VALUES {values_sql}'
+            }).execute()
+
         return {"success": True, "rows_inserted": len(df)}
-        
+
     except pd.errors.EmptyDataError:
         return {"success": False, "error": "The uploaded file is empty."}
     except Exception as e:
@@ -118,16 +147,22 @@ async def speak_summary(request: SpeakRequest):
 
 @router.get("/health")
 async def health_check():
-    """Health check endpoint."""
-    from database.connection import db_pool
-    db_ok = db_pool.test_connection()
-    
+    from database.connection import get_supabase
+    db_ok = False
+    try:
+        sb = get_supabase()
+        sb.rpc('execute_sql', {'query_text': 'SELECT 1'}).execute()
+        db_ok = True
+    except Exception:
+        pass
+
     sarvam_status = "unreachable"
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
             resp = await client.head("https://api.sarvam.ai")
             sarvam_status = "reachable" if resp.status_code < 500 else "unreachable"
-    except: pass
+    except Exception:
+        pass
 
     return {
         "status": "ok" if db_ok else "degraded",
