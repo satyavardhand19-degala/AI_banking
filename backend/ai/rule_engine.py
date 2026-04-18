@@ -36,6 +36,10 @@ class RuleBasedAnalyzer:
                 return col
         return None
 
+    def _safe_num(self, col: str) -> str:
+        """Cast a TEXT column to numeric, ignoring currency symbols and commas."""
+        return f"NULLIF(REGEXP_REPLACE(\"{col}\", '[^0-9.-]', '', 'g'), '')::numeric"
+
     def _date_col(self, cols):
         return self._find(cols, 'date', 'time', 'created_at', 'timestamp', 'day')
 
@@ -83,10 +87,10 @@ class RuleBasedAnalyzer:
             return ""
         m = re.search(r'(?:greater than|above|more than|over|exceed[s]?)\s*[₹rRsS.]*\s*(\d[\d,]*)', q)
         if m:
-            return f" AND \"{col}\"::numeric > {m.group(1).replace(',', '')}"
+            return f" AND NULLIF(REGEXP_REPLACE(\"{col}\", '[^0-9.-]', '', 'g'), '')::numeric > {m.group(1).replace(',', '')}"
         m = re.search(r'(?:less than|below|under|within)\s*[₹rRsS.]*\s*(\d[\d,]*)', q)
         if m:
-            return f" AND \"{col}\"::numeric < {m.group(1).replace(',', '')}"
+            return f" AND NULLIF(REGEXP_REPLACE(\"{col}\", '[^0-9.-]', '', 'g'), '')::numeric < {m.group(1).replace(',', '')}"
         return ""
 
     def generate_sql(self, query: str) -> str:
@@ -120,10 +124,11 @@ class RuleBasedAnalyzer:
 
         # Q25 — ratio deposits to withdrawals
         if 'ratio' in q and d_col and w_col:
+            nd, nw = self._safe_num(d_col), self._safe_num(w_col)
             return (
-                f'SELECT ROUND(SUM("{d_col}"::numeric), 2) as total_deposits, '
-                f'ROUND(SUM("{w_col}"::numeric), 2) as total_withdrawals, '
-                f'ROUND(SUM("{d_col}"::numeric) / NULLIF(SUM("{w_col}"::numeric), 0), 4) as ratio '
+                f'SELECT ROUND(SUM({nd}), 2) as total_deposits, '
+                f'ROUND(SUM({nw}), 2) as total_withdrawals, '
+                f'ROUND(SUM({nd}) / NULLIF(SUM({nw}), 0), 4) as ratio '
                 f'FROM {T}'
             )
 
@@ -131,10 +136,11 @@ class RuleBasedAnalyzer:
         if ('compare' in q or ' vs ' in q) and 'week' in q and dc:
             col = w_col or amt_col
             if col:
+                nc = self._safe_num(col)
                 return (
                     f'SELECT '
-                    f'ROUND(SUM(CASE WHEN "{dc}"::date >= CURRENT_DATE - INTERVAL \'7 days\' THEN "{col}"::numeric ELSE 0 END), 2) as this_week, '
-                    f'ROUND(SUM(CASE WHEN "{dc}"::date >= CURRENT_DATE - INTERVAL \'14 days\' AND "{dc}"::date < CURRENT_DATE - INTERVAL \'7 days\' THEN "{col}"::numeric ELSE 0 END), 2) as last_week '
+                    f'ROUND(SUM(CASE WHEN "{dc}"::date >= CURRENT_DATE - INTERVAL \'7 days\' THEN {nc} ELSE 0 END), 2) as this_week, '
+                    f'ROUND(SUM(CASE WHEN "{dc}"::date >= CURRENT_DATE - INTERVAL \'14 days\' AND "{dc}"::date < CURRENT_DATE - INTERVAL \'7 days\' THEN {nc} ELSE 0 END), 2) as last_week '
                     f'FROM {T}'
                 )
 
@@ -144,7 +150,7 @@ class RuleBasedAnalyzer:
             if gc:
                 sc = d_col or w_col or amt_col
                 if sc:
-                    return f'SELECT "{gc}", COUNT(*) as count, ROUND(SUM("{sc}"::numeric), 2) as total FROM {T} GROUP BY "{gc}" ORDER BY total DESC'
+                    return f'SELECT "{gc}", COUNT(*) as count, ROUND(SUM({self._safe_num(sc)}), 2) as total FROM {T} GROUP BY "{gc}" ORDER BY total DESC'
                 return f'SELECT "{gc}", COUNT(*) as count FROM {T} GROUP BY "{gc}" ORDER BY count DESC'
 
         # Q21 — highest entries by category/particulars
@@ -167,35 +173,35 @@ class RuleBasedAnalyzer:
         if re.search(r'\b(max|maximum|highest|largest)\b', q):
             col = bal_col or d_col or w_col or amt_col
             if col:
-                return f'SELECT MAX("{col}"::numeric) as maximum_value FROM {T} WHERE 1=1{df}'
+                return f'SELECT MAX({self._safe_num(col)}) as maximum_value FROM {T} WHERE 1=1{df}'
 
         # Minimum
         if re.search(r'\b(min|minimum|lowest|smallest)\b', q):
             col = bal_col or d_col or w_col or amt_col
             if col:
-                return f'SELECT MIN("{col}"::numeric) as minimum_value FROM {T} WHERE 1=1{df}'
+                return f'SELECT MIN({self._safe_num(col)}) as minimum_value FROM {T} WHERE 1=1{df}'
 
         # Q14 — average
         if re.search(r'\b(average|avg|mean)\b', q):
             col = amt_col or d_col or w_col or bal_col
             if col:
-                return f'SELECT ROUND(AVG("{col}"::numeric), 2) as average_value FROM {T} WHERE 1=1{df}'
+                return f'SELECT ROUND(AVG({self._safe_num(col)}), 2) as average_value FROM {T} WHERE 1=1{df}'
 
         # Q11 — total deposits
         if re.search(r'\b(total|sum)\b', q) and re.search(r'\b(deposit|credit|income|inflow)\b', q):
             if d_col:
-                return f'SELECT ROUND(SUM("{d_col}"::numeric), 2) as total_deposits FROM {T} WHERE 1=1{df}'
+                return f'SELECT ROUND(SUM({self._safe_num(d_col)}), 2) as total_deposits FROM {T} WHERE 1=1{df}'
 
         # Q12 — total withdrawals / expenditure
         if re.search(r'\b(total|sum|expenditure|expense|spending)\b', q) and re.search(r'\b(withdrawal|debit|expense|spend|outflow)\b', q):
             if w_col:
-                return f'SELECT ROUND(SUM("{w_col}"::numeric), 2) as total_withdrawals FROM {T} WHERE 1=1{df}'
+                return f'SELECT ROUND(SUM({self._safe_num(w_col)}), 2) as total_withdrawals FROM {T} WHERE 1=1{df}'
 
         # Generic sum
         if re.search(r'\b(total|sum|aggregate)\b', q):
             col = amt_col or d_col or w_col or bal_col
             if col:
-                return f'SELECT ROUND(SUM("{col}"::numeric), 2) as total_value FROM {T} WHERE 1=1{df}'
+                return f'SELECT ROUND(SUM({self._safe_num(col)}), 2) as total_value FROM {T} WHERE 1=1{df}'
 
         # Q7/Q9 — amount threshold filter
         if re.search(r'(?:greater than|above|more than|less than|below|over|under)\s*[₹rRsS.]*\s*\d', q):
@@ -233,12 +239,12 @@ class RuleBasedAnalyzer:
         if re.search(r'\b(summary|overview|quick|describe|statistics|stats)\b', q):
             parts = ["COUNT(*) as total_rows"]
             if d_col:
-                parts.append(f'ROUND(SUM("{d_col}"::numeric), 2) as total_deposits')
+                parts.append(f'ROUND(SUM({self._safe_num(d_col)}), 2) as total_deposits')
             if w_col:
-                parts.append(f'ROUND(SUM("{w_col}"::numeric), 2) as total_withdrawals')
+                parts.append(f'ROUND(SUM({self._safe_num(w_col)}), 2) as total_withdrawals')
             if bal_col:
-                parts.append(f'MAX("{bal_col}"::numeric) as max_balance')
-                parts.append(f'MIN("{bal_col}"::numeric) as min_balance')
+                parts.append(f'MAX({self._safe_num(bal_col)}) as max_balance')
+                parts.append(f'MIN({self._safe_num(bal_col)}) as min_balance')
             return f"SELECT {', '.join(parts)} FROM {T}"
 
         # Q4 — show specific named columns
